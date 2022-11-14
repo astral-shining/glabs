@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <glad/glad.h>
-#include <qwertyutils/utils.hpp>
+#include <cpputils/utils.hpp>
 
 namespace GL {
 

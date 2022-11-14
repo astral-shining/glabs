@@ -2,8 +2,8 @@
 #include <glm/vec3.hpp>
 #include <glad/glad.h>
 #include <glm/mat4x4.hpp>
-#include <qwertyutils/types.hpp>
-#include <qwertyutils/constexpr_for.hpp>
+#include <cpputils/types.hpp>
+#include <cpputils/constexpr_for.hpp>
 
 namespace GL {
 

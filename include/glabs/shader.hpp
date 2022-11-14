@@ -6,7 +6,7 @@
 #include <string>
 #include <type_traits>
 #include <glad/glad.h>
-#include <qwertyutils/types.hpp>
+#include <cpputils/types.hpp>
 
 #include "vbo.hpp"
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <glad/glad.h>
-#include <qwertyutils/types.hpp>
+#include <cpputils/types.hpp>
 
 namespace GL {
 

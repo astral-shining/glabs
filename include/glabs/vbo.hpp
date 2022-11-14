@@ -6,9 +6,9 @@
 #include <initializer_list>
 #include <type_traits>
 #include <glad/glad.h>
-#include <qwertyutils/types.hpp>
-#include <qwertyutils/debug.hpp>
-#include <qwertyutils/tupleutils.hpp>
+#include <cpputils/types.hpp>
+#include <cpputils/debug.hpp>
+#include <cpputils/tupleutils.hpp>
 
 namespace GL {
 

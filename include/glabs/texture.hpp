@@ -4,7 +4,7 @@
 #include <string>
 #include <glm/vec2.hpp>
 #include <png.h>
-#include <qwertyutils/utils.hpp>
+#include <cpputils/utils.hpp>
 
 namespace GL {
 
