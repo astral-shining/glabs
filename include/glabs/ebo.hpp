@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <glad/glad.h>
-#include <cpputils/utils.hpp>
+#include <cpputils/types.hpp>
 
 namespace GL {
 
