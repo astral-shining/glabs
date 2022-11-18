@@ -218,6 +218,7 @@ inline u32 Shader::getAttrib(const char* name) const {
 inline void Shader::destroy() {
     if (m_compiled) {
         glDeleteProgram(m_program);
+        m_compiled = false;
     }
 }
 
