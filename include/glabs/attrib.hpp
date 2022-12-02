@@ -1,9 +1,9 @@
 #pragma once
-#include <glm/vec3.hpp>
 #include <glad/glad.h>
-#include <glm/mat4x4.hpp>
+#include <glm/detail/qualifier.hpp>
 #include <cpputils/types.hpp>
 #include <cpputils/constexpr_for.hpp>
+#include <cmath>
 
 namespace GL {
 
@@ -299,3 +299,8 @@ inline Shader& AttribLinker<N, Tupl>::getShader() {
 }
 
 };
+
+
+constexpr GL::RGBA operator""_rgba(unsigned long long int c) {
+    return GL::HexRGBA(c);
+}

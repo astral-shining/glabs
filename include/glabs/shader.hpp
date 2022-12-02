@@ -1,15 +1,20 @@
 #pragma once
-#include <string_view>
-#include <glm/mat4x4.hpp>
-#include <glm/mat3x3.hpp>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <glad/glad.h>
 #include <cpputils/types.hpp>
+#include <glm/ext/vector_float4.hpp>
 
 #include "vbo.hpp"
 
+namespace glm {
+    typedef mat<4, 4, float, defaultp> mat4;
+    typedef mat<3, 3, float, defaultp> mat3;
+    typedef vec<3, float, defaultp>	vec3;
+    typedef vec<2, float, defaultp>	vec2;
+    typedef vec<2, unsigned int, defaultp> uvec2;
+};
 
 namespace GL {
 
@@ -34,7 +39,7 @@ public:
     Shader& unuse();
 
     u32 indexToLocation(u32 index);
-    u32 getAttribLocation(std::string_view name) const;
+    u32 getAttribLocation(const char* name) const;
     
     Shader& uniform(const char* name, int v);
     Shader& uniform(const char* name, const glm::vec2& v);
@@ -147,8 +152,8 @@ inline u32 Shader::indexToLocation(u32 index) {
     return location;
 }
 
-inline u32 Shader::getAttribLocation(std::string_view name) const {
-    return glGetAttribLocation(m_program, name.data());
+inline u32 Shader::getAttribLocation(const char* name) const {
+    return glGetAttribLocation(m_program, name);
 }
 
 inline Shader& Shader::uniform(const char* name, int v) {
