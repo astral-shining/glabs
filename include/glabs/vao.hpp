@@ -5,37 +5,24 @@
 
 namespace GL {
 
-struct VAO {
+class VAO {
     u32 m_id;
     
+public:
     VAO();
     VAO(u32 id);
-    VAO& create();
-    VAO& destroy();
     VAO& use();
     VAO& unuse();
     ~VAO();
 };
 
 inline VAO::VAO() {
-    create();
+    glGenVertexArrays(1, &m_id);
+    logDebug("Created vao: %d", m_id);
 }
 
 inline VAO::VAO(u32 id) : m_id(id) {
 
-}
-
-inline VAO& VAO::create() {
-    glGenVertexArrays(1, &m_id);
-    return *this;
-}
-
-inline VAO& VAO::destroy() {
-    if (m_id) {
-        glDeleteVertexArrays(1, &m_id);
-        m_id = 0;
-    }
-    return *this;
 }
 
 inline VAO& VAO::use() {
@@ -49,7 +36,8 @@ inline VAO& VAO::unuse() {
 }
 
 inline VAO::~VAO() {
-    destroy();
+    glDeleteVertexArrays(1, &m_id);
+    logDebug("Destroyed vao: %d", m_id);
 }
 
 };

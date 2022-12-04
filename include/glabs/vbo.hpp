@@ -1,8 +1,6 @@
 #pragma once
-#include <cstdint>
 #include <vector>
 #include <tuple>
-#include <span>
 #include <initializer_list>
 #include <type_traits>
 #include <glad/glad.h>
@@ -11,9 +9,6 @@
 #include <cpputils/tupleutils.hpp>
 
 namespace GL {
-
-#define DYNAMIC_DRAW 0x88E8
-#define STATIC_DRAW 0x88E4
 
 template<typename T, typename... Ts>
 using vbo_type = std::conditional_t<(sizeof...(Ts)>0), std::tuple<T, Ts...>, T>;
@@ -27,18 +22,18 @@ public:
     static constexpr std::size_t ntypes = 1+sizeof...(Ts);
     
     VBO();
-    VBO(std::initializer_list<type> l, u32 draw_type = STATIC_DRAW);
+    VBO(std::initializer_list<type> l, u32 draw_type = GL_STATIC_DRAW);
 
-    void use();
-    void unuse();
+    auto& use();
+    auto& unuse();
 
     template<typename T2>
     requires requires(T2 t) { t.data(); t.size(); }
-    void bufferData(T2& data, u32 draw_type);
-    void bufferData(std::initializer_list<type> data, u32 draw_type);
-    void bufferData(T* data, u32 size, u32 draw_type);
-    void bufferSubData(std::vector<type>& data, u32 offset, u32 size);
-    void bufferSubData(T&& data, u32 offset);
+    auto& bufferData(T2& data, u32 draw_type);
+    auto& bufferData(std::initializer_list<type> data, u32 draw_type);
+    auto& bufferData(T* data, u32 size, u32 draw_type);
+    auto& bufferSubData(std::vector<type>& data, u32 offset, u32 size);
+    auto& bufferSubData(T&& data, u32 offset);
 
     // template<std::size_t... s>
     // requires (is_tuple_v<type> && sizeof...(s) > 0)
@@ -48,8 +43,8 @@ public:
 
     template<typename T2>
     requires (is_tuple_v<type>)
-    void bufferSubData(T2&& data, u32 offset);
-    void bufferSubData(T* data, u32 size, u32 offset);
+    auto& bufferSubData(T2&& data, u32 offset);
+    auto& bufferSubData(T* data, u32 size, u32 offset);
 
     ~VBO();
 };
@@ -69,60 +64,68 @@ inline VBO<T, Ts...>::VBO(std::initializer_list<vbo_type<T, Ts...>> l, u32 draw_
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::use() {
+inline auto& VBO<T, Ts...>::use() {
     glBindBuffer(GL_ARRAY_BUFFER, m_id);
+    return *this;
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::unuse() {
+inline auto& VBO<T, Ts...>::unuse() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    return *this;
 }
 
 template<typename T, typename... Ts>
 template<typename T2>
 requires requires(T2 t) { t.data(); t.size(); }
-void VBO<T, Ts...>::bufferData(T2& data, u32 draw_type) {
+auto& VBO<T, Ts...>::bufferData(T2& data, u32 draw_type) {
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(vbo_type<T, Ts...>), data.data(), draw_type);
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::bufferData(std::initializer_list<vbo_type<T, Ts...>> data, u32 draw_type) {
+inline auto& VBO<T, Ts...>::bufferData(std::initializer_list<vbo_type<T, Ts...>> data, u32 draw_type) {
     glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(vbo_type<T, Ts...>), (void*)data.begin(), draw_type);
+    return *this;
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::bufferData(T* data, u32 size, u32 draw_type) {
+inline auto& VBO<T, Ts...>::bufferData(T* data, u32 size, u32 draw_type) {
     glBufferData(GL_ARRAY_BUFFER, size, (void*)data, draw_type);
+    return *this;
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::bufferSubData(std::vector<vbo_type<T, Ts...>>& data, u32 offset, u32 size) {
+inline auto& VBO<T, Ts...>::bufferSubData(std::vector<vbo_type<T, Ts...>>& data, u32 offset, u32 size) {
     glBufferSubData(GL_ARRAY_BUFFER, offset, size, data.data());
+    return *this;
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::bufferSubData(T&& data, u32 offset) {
+inline auto& VBO<T, Ts...>::bufferSubData(T&& data, u32 offset) {
     glBufferSubData(GL_ARRAY_BUFFER, offset*sizeof(type), sizeof(type), &data);
+    return *this;
 }
 
 template<typename T, typename... Ts>
 template<typename T2>
 requires (is_tuple_v<vbo_type<T, Ts...>>)
-void VBO<T, Ts...>::bufferSubData(T2&& data, u32 offset) {
+inline auto& VBO<T, Ts...>::bufferSubData(T2&& data, u32 offset) {
     using T2_noref = std::remove_reference_t<T2>;
 //    logDebug("bufferSubData offset: %d, size %d", offset*sizeof(type)+tuple_offset<T2_noref, type>(), sizeof(T2_noref));
     glBufferSubData(GL_ARRAY_BUFFER, offset*sizeof(type)+tuple_offset<T2_noref, type>(), sizeof(T2_noref), &data);
+    return *this;
 }
 
 template<typename T, typename... Ts>
-inline void VBO<T, Ts...>::bufferSubData(T* data, u32 size, u32 offset) {
+inline auto& VBO<T, Ts...>::bufferSubData(T* data, u32 size, u32 offset) {
     glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+    return *this;
 }
 
 template<typename T, typename... Ts>
 inline VBO<T, Ts...>::~VBO() {
-    logDebug("Destroyed vbo: %d", m_id);
     glDeleteBuffers(1, &m_id);
+    logDebug("Destroyed vbo: %d", m_id);
 }
 
 };

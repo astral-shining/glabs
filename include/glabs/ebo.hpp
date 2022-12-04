@@ -9,17 +9,9 @@ namespace GL {
 struct EBO {
     u32 vbo;
     
-    inline EBO() {
-        glGenBuffers(1, &vbo);
-    }
-    
-    inline void bind() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo);
-    }
-    
-    inline void unbind() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER , 0);
-    }
+    EBO();
+    void use();
+    void unuse();
 
     inline ~EBO() {
         glDeleteBuffers(1, &vbo);
@@ -33,5 +25,17 @@ struct EBO {
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, l.size() * sizeof(u32), l.begin(), GL_DYNAMIC_DRAW);
     }
 };
+
+inline EBO::EBO() {
+    glGenBuffers(1, &vbo);
+}
+
+inline void EBO::use() {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo);
+}
+
+inline void EBO::unuse() {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER , 0);
+}
 
 };
