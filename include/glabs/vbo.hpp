@@ -6,7 +6,7 @@
 #include <glad/glad.h>
 #include <cpputils/types.hpp>
 #include <cpputils/debug.hpp>
-#include <cpputils/tupleutils.hpp>
+#include <cpputils/metafunctions.hpp>
 
 namespace GL {
 
@@ -42,7 +42,7 @@ public:
     // }
 
     template<typename T2>
-    requires (is_tuple_v<type>)
+    requires (IsTuple<type>)
     auto& bufferSubData(T2&& data, u32 offset);
     auto& bufferSubData(T* data, u32 size, u32 offset);
 
@@ -108,11 +108,11 @@ inline auto& VBO<T, Ts...>::bufferSubData(T&& data, u32 offset) {
 
 template<typename T, typename... Ts>
 template<typename T2>
-requires (is_tuple_v<vbo_type<T, Ts...>>)
+requires (IsTuple<vbo_type<T, Ts...>>)
 inline auto& VBO<T, Ts...>::bufferSubData(T2&& data, u32 offset) {
     using T2_noref = std::remove_reference_t<T2>;
 //    logDebug("bufferSubData offset: %d, size %d", offset*sizeof(type)+tuple_offset<T2_noref, type>(), sizeof(T2_noref));
-    glBufferSubData(GL_ARRAY_BUFFER, offset*sizeof(type)+tuple_offset<T2_noref, type>(), sizeof(T2_noref), &data);
+    glBufferSubData(GL_ARRAY_BUFFER, offset*sizeof(type)+tupleOffset<T2_noref, type>(), sizeof(T2_noref), &data);
     return *this;
 }
 

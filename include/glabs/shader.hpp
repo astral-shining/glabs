@@ -67,7 +67,8 @@ public:
 
 namespace GL {
 
-inline Shader::Shader(std::string vsource, std::string fsource) : m_vSource(std::move(vsource)), m_fSource(std::move(fsource)) {
+inline Shader::Shader(std::string vsource, std::string fsource)
+ : m_vSource(std::move(vsource)), m_fSource(std::move(fsource)) {
 }
 
 inline Shader& Shader::compile() {

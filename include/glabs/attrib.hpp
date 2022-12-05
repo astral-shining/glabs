@@ -2,6 +2,7 @@
 #include <glad/glad.h>
 #include <glm/detail/qualifier.hpp>
 #include <cpputils/types.hpp>
+#include <cpputils/metafunctions.hpp>
 #include <cpputils/constexpr_for.hpp>
 #include <cmath>
 
@@ -63,10 +64,10 @@ template<std::size_t N, typename Tupl>
 class AttribLinker {
     Shader& m_shader;
 
-    using type_N = tuple_element_noerror_t<N, Tupl>;
+    using type_N = TupleElementNoerror<N, Tupl>;
 
     template<std::size_t Advance>
-    using R = std::conditional_t<std::is_same_v<tuple_element_noerror_t<N+Advance, Tupl>, void>, Shader&, AttribLinker<N+Advance, Tupl>>;
+    using R = std::conditional_t<std::is_same_v<TupleElementNoerror<N+Advance, Tupl>, void>, Shader&, AttribLinker<N+Advance, Tupl>>;
 
     using next_R = R<1>;
 
@@ -230,13 +231,13 @@ inline void AttribLinker<N, Tupl>::linkInstancedAttribute(u32 location, u32 star
 
 template<std::size_t N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::linkAttribute(const char* name) {
-    linkAttribute<type_N>(m_shader.getAttribLocation(name), tuple_offset<N, Tupl>(), sizeof(Tupl));
+    linkAttribute<type_N>(m_shader.getAttribLocation(name), tupleOffset<N, Tupl>(), sizeof(Tupl));
     return m_shader;
 }
 
 template<std::size_t N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::linkInstancedAttribute(const char* name) {
-    linkInstancedAttribute<type_N>(m_shader.getAttribLocation(name), tuple_offset<N, Tupl>(), sizeof(Tupl));
+    linkInstancedAttribute<type_N>(m_shader.getAttribLocation(name), tupleOffset<N, Tupl>(), sizeof(Tupl));
     return m_shader;
 }
 
@@ -247,12 +248,12 @@ inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::skipAttribu
 
 template<std::size_t N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoLink() {
-    return linkAttribute<type_N>(m_shader.indexToLocation(N), tuple_offset<N, Tupl>(), sizeof(Tupl));
+    return linkAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
 }
 
 template<std::size_t N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoInstancedLink() {
-    return linkInstancedAttribute<type_N>(m_shader.indexToLocation(N), tuple_offset<N, Tupl>(), sizeof(Tupl));
+    return linkInstancedAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
 }
 
 template<std::size_t N, typename Tupl>
@@ -274,7 +275,7 @@ template<std::size_t S>
 inline typename AttribLinker<N, Tupl>::template R<S> AttribLinker<N, Tupl>::linkAttributes(const char* const (&n)[S]) {
     constexpr_for(std::size_t i=0, i<S, i+1, 
         using iT = std::tuple_element_t<i+N, Tupl>;
-        linkAttribute<iT>(m_shader.getAttribLocation(n[i]), tuple_offset<i+N, Tupl>(), sizeof(Tupl));
+        linkAttribute<iT>(m_shader.getAttribLocation(n[i]), tupleOffset<i+N, Tupl>(), sizeof(Tupl));
     );
     return m_shader;
 }
@@ -283,7 +284,7 @@ template<std::size_t N, typename Tupl>
 inline Shader& AttribLinker<N, Tupl>::autoLinkAll() {
     constexpr_for(std::size_t i=N, i<std::tuple_size_v<Tupl>, i+1,
         using iT = std::tuple_element_t<i, Tupl>;
-        linkAttribute<iT>(m_shader.indexToLocation(i), tuple_offset<i, Tupl>(), sizeof(Tupl));
+        linkAttribute<iT>(m_shader.indexToLocation(i), tupleOffset<i, Tupl>(), sizeof(Tupl));
     );
     return m_shader;
 }

@@ -6,36 +6,79 @@
 #include <glm/ext/vector_int2.hpp>
 #include <glm/ext/vector_int3.hpp>
 
+#include "imagedata.hpp"
+
 namespace GL {
 
-enum TextureTarget {
-    TEXTURE_1D = GL_TEXTURE_1D,
-    TEXTURE_2D = GL_TEXTURE_2D,
-    TEXTURE_3D = GL_TEXTURE_3D
-};
-
-
-template<TextureTarget target>
+template<u32 target>
 class Texture { 
     u32 m_id;
 
 public:
     Texture(u32 option_filter = GL_NEAREST, u32 option_wrap = GL_CLAMP_TO_BORDER);
 
-    auto& setImage(i32 internalformat, i32 format, i32 width, void* data, u32 type = target, u32 detail = 0, u32 border = 0) requires (target == TEXTURE_1D);
-    auto& setImage(i32 internalformat, i32 format, glm::ivec2 size, void* data, u32 type = target, u32 detail = 0, u32 border = 0) requires (target == TEXTURE_2D);
-    auto& setImage(i32 internalformat, i32 format, glm::ivec3 size, void* data, u32 type = target, u32 detail = 0, u32 border = 0) requires (target == TEXTURE_3D);
+    auto& setImage(
+        i32 internalformat, 
+        i32 format, 
+        i32 width, 
+        void* data, 
+        u32 type = target, 
+        u32 detail = 0, 
+        u32 border = 0
+    ) requires (target == GL_TEXTURE_1D);
+    auto& setImage(
+        i32 internalformat, 
+        i32 format, 
+        glm::ivec2 size, 
+        void* data, 
+        u32 type = target, 
+        u32 detail = 0, 
+        u32 border = 0
+    ) requires (target == GL_TEXTURE_2D);
+    auto& setImage(
+        i32 internalformat, 
+        i32 format, 
+        glm::ivec3 size, 
+        void* data, 
+        u32 type = target, 
+        u32 detail = 0, 
+        u32 border = 0
+    ) requires (target == GL_TEXTURE_3D);
     
-    auto& subImage(i32 internalformat, i32 format, i32 width, void* data, u32 type = target, u32 detail = 0, u32 border = 0) requires (target == TEXTURE_1D);
-    auto& subImage(i32 internalformat, i32 format, glm::ivec2 offset, glm::ivec2 size, void* data, u32 type = target, u32 detail = 0, u32 border = 0) requires (target == TEXTURE_2D);
-    auto& subImage(i32 internalformat, i32 format, glm::ivec3 offset, glm::ivec3 size, void* data, u32 type = target, u32 detail = 0, u32 border = 0) requires (target == TEXTURE_3D);
+    auto& subImage(
+        i32 format, 
+        i32 offsetX, 
+        i32 width, 
+        void* data, 
+        u32 type = target, 
+        u32 detail = 0, 
+        u32 border = 0
+    ) requires (target == GL_TEXTURE_1D);
+    auto& subImage(
+        i32 format, 
+        glm::ivec2 offset, 
+        glm::ivec2 size, 
+        void* data, 
+        u32 type = target, 
+        u32 detail = 0, 
+        u32 border = 0
+    ) requires (target == GL_TEXTURE_2D);
+    auto& subImage(
+        i32 format, 
+        glm::ivec3 offset, 
+        glm::ivec3 size, 
+        void* data, 
+        u32 type = target, 
+        u32 detail = 0, 
+        u32 border = 0
+    ) requires (target == GL_TEXTURE_3D);
 
     auto& use();
     auto& unuse();
     ~Texture();
 };
 
-template<TextureTarget target>
+template<u32 target>
 inline Texture<target>::Texture(u32 option_filter, u32 option_wrap) {
     glGenTextures(1, &m_id);
     use();
@@ -48,62 +91,164 @@ inline Texture<target>::Texture(u32 option_filter, u32 option_wrap) {
     unuse();
 }
 
-template<TextureTarget target>
-inline auto& Texture<target>::setImage(i32 internalformat, i32 format, i32 width, void* data, u32 type, u32 detail, u32 border) 
-requires (target == TEXTURE_1D) {
-    glTexImage1D(type, detail, internalformat, width, border, format, type, data);
+template<u32 target>
+inline auto& Texture<target>::setImage(
+    i32 internalformat, 
+    i32 format, 
+    i32 width, 
+    void* data, 
+    u32 type, 
+    u32 detail, 
+    u32 border
+) requires (target == GL_TEXTURE_1D) {
+    glTexImage1D(
+        type, 
+        detail, 
+        internalformat,
+        width, 
+        border, 
+        format, 
+        type, 
+        data
+    );
     return *this;
 }
 
-template<TextureTarget target>
-inline auto& Texture<target>::setImage(i32 internalformat, i32 format, glm::ivec2 size, void* data, u32 type, u32 detail, u32 border) 
-requires (target == TEXTURE_2D) {
-    glTexImage2D(type, detail, internalformat, size.x, size.y, border, format, type, data); 
+template<u32 target>
+inline auto& Texture<target>::setImage(
+    i32 internalformat, 
+    i32 format, 
+    glm::ivec2 size, 
+    void* data, 
+    u32 type, 
+    u32 detail, 
+    u32 border
+) requires (target == GL_TEXTURE_2D) {
+    glTexImage2D(
+        type, 
+        detail, 
+        internalformat, 
+        size.x, 
+        size.y, 
+        border, 
+        format, 
+        type, 
+        data
+    ); 
     return *this;
 }
 
-template<TextureTarget target>
-inline auto& Texture<target>::setImage(i32 internalformat, i32 format, glm::ivec3 size, void* data, u32 type, u32 detail, u32 border) 
-requires (target == TEXTURE_3D) {
-    glTexImage3D(type, detail, internalformat, size.x, size.y, size.z, border, format, type, data);
+template<u32 target>
+inline auto& Texture<target>::setImage(
+    i32 internalformat, 
+    i32 format, 
+    glm::ivec3 size, 
+    void* data, 
+    u32 type, 
+    u32 detail, 
+    u32 border
+) requires (target == GL_TEXTURE_3D) {
+    glTexImage3D(
+        type, 
+        detail, 
+        internalformat, 
+        size.x, 
+        size.y, 
+        size.z, 
+        border, 
+        format, 
+        type,
+        data
+    );
     return *this;
 }
 
-template<TextureTarget target>
-inline auto& Texture<target>::subImage(i32 format, i32 offsetX, i32 width, void* data, u32 type, u32 detail, u32 border) 
-requires (target == TEXTURE_1D) {
-    glTexSubImage1D(type, detail, offsetX, width, format, type, data);
+template<u32 target>
+inline auto& Texture<target>::subImage(
+    i32 format, 
+    i32 offsetX, 
+    i32 width, 
+    void* data, 
+    u32 type, 
+    u32 detail, 
+    u32 border
+) requires (target == GL_TEXTURE_1D) {
+    glTexSubImage1D(
+        type, 
+        detail, 
+        offsetX, 
+        width, 
+        format, 
+        type, 
+        data
+    );
     return *this;
 }
 
-template<TextureTarget target>
-inline auto& Texture<target>::subImage(i32 internalformat, i32 format, glm::ivec2 offset, glm::ivec2 size, void* data, u32 type, u32 detail, u32 border) 
-requires (target == TEXTURE_2D) {
-    glTexSubImage2D(type, detail, offset.x, offset.y, size.x, size.y, format, type, data);
+template<u32 target>
+inline auto& Texture<target>::subImage(
+    i32 format, 
+    glm::ivec2 offset, 
+    glm::ivec2 size, 
+    void* data, 
+    u32 type, 
+    u32 detail, 
+    u32 border
+) requires (target == GL_TEXTURE_2D) {
+    glTexSubImage2D(
+        type, 
+        detail, 
+        offset.x, 
+        offset.y, 
+        size.x, 
+        size.y, 
+        format, 
+        type, 
+        data
+    );
     return *this;
 }
 
-template<TextureTarget target>
-inline auto& Texture<target>::subImage(i32 internalformat, i32 format, glm::ivec3 offset, glm::ivec3 size, void* data, u32 type, u32 detail, u32 border) 
-requires (target == TEXTURE_3D) {
-    glTexSubImage3D(type, detail, offset.x, offset.y, offset.z, size.x, size.y, size.z, format, type, data);
+template<u32 target>
+inline auto& Texture<target>::subImage(
+    i32 format, 
+    glm::ivec3 offset, 
+    glm::ivec3 size, 
+    void* data, 
+    u32 type, 
+    u32 detail, 
+    u32 border
+) requires (target == GL_TEXTURE_3D) {
+    glTexSubImage3D(
+        type, 
+        detail, 
+        offset.x, 
+        offset.y, 
+        offset.z, 
+        size.x, 
+        size.y, 
+        size.z, 
+        format, 
+        type, 
+        data
+    );
     return *this;
 }
 
-template<TextureTarget target>
+template<u32 target>
 inline auto& Texture<target>::use() {
     //glActiveTexture(GL_TEXTURE0);
     glBindTexture(type, m_id);
     return *this;
 }
 
-template<TextureTarget target>
+template<u32 target>
 inline auto& Texture<target>::unuse() {
     glBindTexture(image, 0);
     return *this;
 }
 
-template<TextureTarget target>
+template<u32 target>
 inline Texture<target>::~Texture() {
     glDeleteTextures(1, &m_id);
     logDebug("Destroyed texture %d", m_id);
