@@ -1,25 +1,17 @@
 #pragma once
-#include <stdexcept>
-#include <string>
-#include <type_traits>
+#include <cppmaths/vec.hpp>
+#include <cppmaths/mat.hpp>
+#include <cpputils/string.hpp>
 #include <glad/glad.h>
 #include <cpputils/types.hpp>
-#include <glm/ext/vector_float4.hpp>
+#include <cpputils/error.hpp>
 
 #include "vbo.hpp"
-
-namespace glm {
-    typedef mat<4, 4, float, defaultp> mat4;
-    typedef mat<3, 3, float, defaultp> mat3;
-    typedef vec<3, float, defaultp>	vec3;
-    typedef vec<2, float, defaultp>	vec2;
-    typedef vec<2, unsigned int, defaultp> uvec2;
-};
 
 namespace GL {
 
 class Shader;
-class RGBA;
+struct RGBA;
 inline Shader* current_shader {};
 
 class Shader {
@@ -27,11 +19,11 @@ class Shader {
     u32 m_fs;
     u32 m_program {};
     bool m_compiled {};
-    std::string m_vSource;
-    std::string m_fSource;
+    String m_vSource;
+    String m_fSource;
 
 public:
-    Shader(std::string vsource, std::string fsource);
+    Shader(String vsource, String fsource);
 
     Shader& compile();
     Shader& use();
@@ -42,16 +34,16 @@ public:
     u32 getAttribLocation(const char* name) const;
     
     Shader& uniform(const char* name, int v);
-    Shader& uniform(const char* name, const glm::vec2& v);
-    Shader& uniform(const char* name, const glm::vec3& v);
-    Shader& uniform(const char* name, const glm::vec4& v);
-    Shader& uniform(const char* name, const glm::mat4& v);
-    Shader& uniform(const char* name, const glm::mat3& v);
-    Shader& uniform(const char* name, const glm::uvec2& v);
+    Shader& uniform(const char* name, const Vec2& v);
+    Shader& uniform(const char* name, const Vec3& v);
+    Shader& uniform(const char* name, const Vec4& v);
+    Shader& uniform(const char* name, const Mat4& v);
+    Shader& uniform(const char* name, const Mat3& v);
+    Shader& uniform(const char* name, const uVec2& v);
     Shader& uniform(const char* name, const RGBA v);
     Shader& uniform(const char* name, float v);
     
-    template<std::size_t s = 0, typename... Ts>
+    template<u32 s = 0, typename... Ts>
     auto attribLinker(VBO<Ts...>& v);
 
     u32 getProgram() const;
@@ -67,8 +59,8 @@ public:
 
 namespace GL {
 
-inline Shader::Shader(std::string vsource, std::string fsource)
- : m_vSource(std::move(vsource)), m_fSource(std::move(fsource)) {
+inline Shader::Shader(String vsource, String fsource)
+ : m_vSource(move(vsource)), m_fSource(move(fsource)) {
 }
 
 inline Shader& Shader::compile() {
@@ -89,13 +81,13 @@ inline Shader& Shader::compile() {
     glGetShaderiv(m_vs, GL_COMPILE_STATUS, &success);
     if(!success) {
         glGetShaderInfoLog(m_vs, 512, NULL, infoLog);
-        throw std::runtime_error(std::string("ERROR: Compiling vertex shader ") + infoLog);
+        abort("Compiling vertex shader ");
     }
 
     glGetShaderiv(m_fs, GL_COMPILE_STATUS, &success);
     if(!success) {
         glGetShaderInfoLog(m_fs, 512, NULL, infoLog);
-        throw std::runtime_error(std::string("ERROR: Compiling fragment shader ") + infoLog);
+        abort("Compiling fragment shader ");
     }
 
     // Link shaders
@@ -163,37 +155,37 @@ inline Shader& Shader::uniform(const char* name, int v) {
     return *this;
 }
 
-inline Shader& Shader::uniform(const char* name, const glm::vec2& v) {
+inline Shader& Shader::uniform(const char* name, const Vec2& v) {
     int location = glGetUniformLocation(m_program, name);
     glUniform2fv(location, 1, reinterpret_cast<const float*>(&v));
     return *this;
 }
 
-inline Shader& Shader::uniform(const char* name, const glm::vec3& v) {
+inline Shader& Shader::uniform(const char* name, const Vec3& v) {
     int location = glGetUniformLocation(m_program, name);
     glUniform3fv(location, 1, reinterpret_cast<const float*>(&v));
     return *this;
 }
 
-inline Shader& Shader::uniform(const char* name, const glm::vec4& v) {
+inline Shader& Shader::uniform(const char* name, const Vec4& v) {
     int location = glGetUniformLocation(m_program, name);
     glUniform4fv(location, 1, reinterpret_cast<const float*>(&v));
     return *this;
 }
 
-inline Shader& Shader::uniform(const char* name, const glm::mat4& v) {
+inline Shader& Shader::uniform(const char* name, const Mat4& v) {
     int location = glGetUniformLocation(m_program, name);
     glUniformMatrix4fv(location, 1, GL_FALSE, reinterpret_cast<const float*>(&v));
     return *this;
 }
 
-inline Shader& Shader::uniform(const char* name, const glm::mat3& v) {
+inline Shader& Shader::uniform(const char* name, const Mat3& v) {
     int location = glGetUniformLocation(m_program, name);
     glUniformMatrix3fv(location, 1, GL_FALSE, reinterpret_cast<const float*>(&v));
     return *this;
 }
 
-inline Shader& Shader::uniform(const char* name, const glm::uvec2& v) {
+inline Shader& Shader::uniform(const char* name, const uVec2& v) {
     int location = glGetUniformLocation(m_program, name);
     glUniform2uiv(location, 1, reinterpret_cast<const u32*>(&v));
     return *this;
@@ -206,15 +198,15 @@ inline Shader& Shader::uniform(const char* name, float v) {
 }
 
 inline Shader& Shader::uniform(const char* name, const RGBA c) {
-    glm::vec4 color {c.r/255.f, c.g/255.f, c.b/255.f, c.a/255.f};
+    Vec4 color {c.r/255.f, c.g/255.f, c.b/255.f, c.a/255.f};
     uniform(name, color);
     return *this;
 }
 
-template<std::size_t s, typename... Ts>
+template<u32 s, typename... Ts>
 inline auto Shader::attribLinker(VBO<Ts...>& vbo) {
     vbo.use();
-    return AttribLinker<s, std::tuple<Ts...>>{*this};
+    return AttribLinker<s, Tuple<Ts...>>{*this};
 }
 
 inline u32 Shader::getAttrib(const char* name) const {

@@ -1,10 +1,13 @@
 #pragma once
 #include <glad/glad.h>
-#include <glm/detail/qualifier.hpp>
 #include <cpputils/types.hpp>
 #include <cpputils/metafunctions.hpp>
 #include <cpputils/constexpr_for.hpp>
-#include <cmath>
+#include <cppmaths/vec.hpp>
+#include <cppmaths/mat.hpp>
+
+extern "C" double fmod(double, double);
+extern "C" double fabs(double);
 
 namespace GL {
 
@@ -30,8 +33,8 @@ constexpr RGBA HexRGBA(u32 num) {
 
 constexpr RGBA HSVA(float H, float S, float V, float A = 1.f) {
     float C = S * V; // Chroma
-    float HPrime = std::fmod(H / 60, 6.f); // H'
-    float X = C * (1 - std::fabs(std::fmod(HPrime, 2.f) - 1));
+    float HPrime = fmod(H / 60, 6.f); // H'
+    float X = C * (1 - fabs(fmod(HPrime, 2.f) - 1));
     float M = V - C;
 
     float R = 0.f;
@@ -59,56 +62,97 @@ constexpr RGBA HSVA(float H, float S, float V, float A = 1.f) {
     return color;
 }
 
+class Shader;
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 class AttribLinker {
     Shader& m_shader;
 
     using type_N = TupleElementNoerror<N, Tupl>;
 
-    template<std::size_t Advance>
-    using R = std::conditional_t<std::is_same_v<TupleElementNoerror<N+Advance, Tupl>, void>, Shader&, AttribLinker<N+Advance, Tupl>>;
+    template<u32 Advance>
+    using R = Conditional<IsSame<TupleElementNoerror<N+Advance, Tupl>, void>, Shader&, AttribLinker<N+Advance, Tupl>>;
 
     using next_R = R<1>;
 
 public:
-    AttribLinker(Shader& shader) : m_shader(shader) {}
-    template<typename T>
-    void linkAttribute(u32 location, u32 start, u32 stride);
-    template<typename T>
-    void linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor = 1);
+    inline AttribLinker(Shader& shader) : m_shader(shader) {
+
+    }
 
     template<typename T>
-    requires (std::same_as<T, RGBA>)
-    void linkAttribute(u32 location, u32 start, u32 stride);
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        logDebug("attribute not found in %s", __PRETTY_FUNCTION__);
+    }
 
     template<typename T>
-    requires (std::same_as<T, RGB>)
-    void linkAttribute(u32 location, u32 start, u32 stride);
+    inline void linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor = 1) {
+        linkAttribute<T>(location, start, stride);
+        glVertexAttribDivisor(location, divisor);
+    }
 
-    template<typename T>
-    requires (std::same_as<T, glm::vec3>)
-    void linkAttribute(u32 location, u32 start, u32 stride);
+    template<IsSame<RGBA> T>
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        glVertexAttribPointer(location, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, reinterpret_cast<void*>(start));
+        glEnableVertexAttribArray(location);
+    }
 
-    template<typename T>
-    requires (std::same_as<T, glm::vec2>)
-    void linkAttribute(u32 location, u32 start, u32 stride);
+    template<IsSame<RGB> T>
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        glVertexAttribPointer(location, 3, GL_UNSIGNED_BYTE, GL_TRUE, stride, reinterpret_cast<void*>(start));
+        glEnableVertexAttribArray(location);
+    }
 
-    template<typename T>
-    requires (std::same_as<T, glm::mat4>)
-    void linkAttribute(u32 location, u32 start, u32 stride);
+    template<IsSame<Vec3> T>
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start));
+        glEnableVertexAttribArray(location);
+    }
 
-    template<typename T>
-    requires (std::same_as<T, glm::mat4>)
-    void linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor);
+    template<IsSame<Vec2> T>
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start));
+        glEnableVertexAttribArray(location);
+    }
 
-    template<typename T>
-    requires (std::same_as<T, glm::mat3>)
-    void linkAttribute(u32 location, u32 start, u32 stride);
+    template<IsSame<Mat4> T>
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start));
+        glVertexAttribPointer(location+1, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+16));
+        glVertexAttribPointer(location+2, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+32));
+        glVertexAttribPointer(location+3, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+48));
+        glEnableVertexAttribArray(location);
+        glEnableVertexAttribArray(location+1);
+        glEnableVertexAttribArray(location+2);
+        glEnableVertexAttribArray(location+3);
+    }
 
-    template<typename T>
-    requires (std::same_as<T, glm::mat3>)
-    void linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor);
+    template<IsSame<Mat4> T>
+    inline void linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor) {
+        linkAttribute<Mat4>(location, start, stride);
+        glVertexAttribDivisor(location, divisor);
+        glVertexAttribDivisor(location+1, divisor);
+        glVertexAttribDivisor(location+2, divisor);
+        glVertexAttribDivisor(location+3, divisor);
+    }
+
+    template<IsSame<Mat3> T>
+    inline void linkAttribute(u32 location, u32 start, u32 stride) {
+        glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, start, reinterpret_cast<void*>(stride));
+        glVertexAttribPointer(location+1, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+12));
+        glVertexAttribPointer(location+2, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+24));
+        glEnableVertexAttribArray(location);
+        glEnableVertexAttribArray(location+1);
+        glEnableVertexAttribArray(location+2);
+    }
+
+    template<IsSame<Mat3> T>
+    inline void linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor) {
+        linkAttribute<Mat3>(location, start, stride);
+        glVertexAttribDivisor(location, divisor);
+        glVertexAttribDivisor(location+1, divisor);
+        glVertexAttribDivisor(location+2, divisor);
+    }
 
     next_R linkAttribute(const char* name);
     next_R linkInstancedAttribute(const char* name);
@@ -119,16 +163,20 @@ public:
     template<typename... Ts>
     next_R customLink(Ts&&...);
 
-    template<std::size_t S>
+    template<u32 S>
     R<S> linkAttributes(const char* const (&)[S]);
 
     template<typename... Ts>
     next_R customInstancedLink(Ts&&...);
 
     Shader& autoLinkAll();
-    Shader& end();
+    inline Shader& end() {
+        return m_shader;
+    }
 
-    Shader& getShader();
+    inline Shader& getShader() {
+        return m_shader;
+    }
 };
 
 };
@@ -137,165 +185,64 @@ public:
 
 namespace GL {
 
-template<std::size_t N, typename Tupl>
-template<typename T>
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    logDebug("attribute not found in %s", __PRETTY_FUNCTION__);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-inline void AttribLinker<N, Tupl>::linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor) {
-    linkAttribute<T>(location, start, stride);
-    glVertexAttribDivisor(location, divisor);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, RGBA>)
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    glVertexAttribPointer(location, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, reinterpret_cast<void*>(start));
-    glEnableVertexAttribArray(location);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, RGB>)
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    glVertexAttribPointer(location, 3, GL_UNSIGNED_BYTE, GL_TRUE, stride, reinterpret_cast<void*>(start));
-    glEnableVertexAttribArray(location);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, glm::vec3>)
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start));
-    glEnableVertexAttribArray(location);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, glm::vec2>)
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start));
-    glEnableVertexAttribArray(location);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, glm::mat4>)
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start));
-    glVertexAttribPointer(location+1, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+16));
-    glVertexAttribPointer(location+2, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+32));
-    glVertexAttribPointer(location+3, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+48));
-    glEnableVertexAttribArray(location);
-    glEnableVertexAttribArray(location+1);
-    glEnableVertexAttribArray(location+2);
-    glEnableVertexAttribArray(location+3);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, glm::mat4>)
-inline void AttribLinker<N, Tupl>::linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor) {
-    linkAttribute<glm::mat4>(location, start, stride);
-    glVertexAttribDivisor(location, divisor);
-    glVertexAttribDivisor(location+1, divisor);
-    glVertexAttribDivisor(location+2, divisor);
-    glVertexAttribDivisor(location+3, divisor);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, glm::mat3>)
-inline void AttribLinker<N, Tupl>::linkAttribute(u32 location, u32 start, u32 stride) {
-    glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, start, reinterpret_cast<void*>(stride));
-    glVertexAttribPointer(location+1, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+12));
-    glVertexAttribPointer(location+2, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(start+24));
-    glEnableVertexAttribArray(location);
-    glEnableVertexAttribArray(location+1);
-    glEnableVertexAttribArray(location+2);
-}
-
-template<std::size_t N, typename Tupl>
-template<typename T>
-requires (std::same_as<T, glm::mat3>)
-inline void AttribLinker<N, Tupl>::linkInstancedAttribute(u32 location, u32 start, u32 stride, u32 divisor) {
-    linkAttribute<glm::mat3>(location, start, stride);
-    glVertexAttribDivisor(location, divisor);
-    glVertexAttribDivisor(location+1, divisor);
-    glVertexAttribDivisor(location+2, divisor);
-}
-
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::linkAttribute(const char* name) {
     linkAttribute<type_N>(m_shader.getAttribLocation(name), tupleOffset<N, Tupl>(), sizeof(Tupl));
     return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::linkInstancedAttribute(const char* name) {
     linkInstancedAttribute<type_N>(m_shader.getAttribLocation(name), tupleOffset<N, Tupl>(), sizeof(Tupl));
     return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::skipAttribute() {
     return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoLink() {
-    return linkAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
+    linkAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
+    return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoInstancedLink() {
     return linkInstancedAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 template<typename... Ts>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::customLink(Ts&&... args) {
-    type_N::linkAttributes(*this, std::forward<Ts>(args)...);
+    type_N::linkAttributes(*this, forward<Ts>(args)...);
     return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 template<typename... Ts>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::customInstancedLink(Ts&&... args) {
-    type_N::linkInstancedAttributes(*this, std::forward<Ts>(args)...);
+    type_N::linkInstancedAttributes(*this, forward<Ts>(args)...);
     return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
-template<std::size_t S>
+template<u32 N, typename Tupl>
+template<u32 S>
 inline typename AttribLinker<N, Tupl>::template R<S> AttribLinker<N, Tupl>::linkAttributes(const char* const (&n)[S]) {
-    constexpr_for(std::size_t i=0, i<S, i+1, 
-        using iT = std::tuple_element_t<i+N, Tupl>;
+    constexpr_for(u32 i=0, i<S, i+1, 
+        using iT = TupleElement<i+N, Tupl>;
         linkAttribute<iT>(m_shader.getAttribLocation(n[i]), tupleOffset<i+N, Tupl>(), sizeof(Tupl));
     );
     return m_shader;
 }
 
-template<std::size_t N, typename Tupl>
+template<u32 N, typename Tupl>
 inline Shader& AttribLinker<N, Tupl>::autoLinkAll() {
-    constexpr_for(std::size_t i=N, i<std::tuple_size_v<Tupl>, i+1,
-        using iT = std::tuple_element_t<i, Tupl>;
+    constexpr_for(u32 i=N, i<TupleSize<Tupl>, i+1,
+        using iT = TupleElement<i, Tupl>;
         linkAttribute<iT>(m_shader.indexToLocation(i), tupleOffset<i, Tupl>(), sizeof(Tupl));
     );
-    return m_shader;
-}
-
-template<std::size_t N, typename Tupl>
-inline Shader& AttribLinker<N, Tupl>::end() {
-    return m_shader;
-}
-
-template<std::size_t N, typename Tupl>
-inline Shader& AttribLinker<N, Tupl>::getShader() {
     return m_shader;
 }
 

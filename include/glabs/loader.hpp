@@ -1,6 +1,7 @@
 #pragma once
 #include <glad/glad.h>
 #include <cpputils/debug.hpp>
+#include <cpputils/error.hpp>
 
 namespace GL {
 
@@ -8,7 +9,7 @@ template<typename T>
 inline void load(T* (*addr) (const char*)) { 
     logDebug("Initializing glad"); 
     if (!gladLoadGLLoader((GLADloadproc) addr)) {
-        throw std::runtime_error("ERROR: Initializing glad");
+        abort("Initializing glad");
     }
 
     logDebug("Status: Using OpenGL Core 3.3");

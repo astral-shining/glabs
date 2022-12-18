@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 #include <initializer_list>
 #include <glad/glad.h>
 #include <cpputils/types.hpp>
