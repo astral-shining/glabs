@@ -6,61 +6,7 @@
 #include <cppmaths/vec.hpp>
 #include <cppmaths/mat.hpp>
 
-extern "C" double fmod(double, double);
-extern "C" double fabs(double);
-
 namespace GL {
-
-struct RGBA {
-    u8 r, g, b, a;
-    constexpr RGBA(u8 r = 0, u8 g = 0, u8 b = 0, u8 a = 0) : r(r), g(g), b(b), a(a) {
-    }
-};
-
-struct RGB {
-    u8 r, g, b;
-    constexpr RGB(u8 r = 0, u8 g = 0, u8 b = 0) : r(r), g(g), b(b) {}
-};
-
-constexpr RGBA HexRGBA(u32 num) {
-    return RGBA(
-        (num & 0xff000000) >> 24u, 
-        (num & 0x00ff0000) >> 16u, 
-        (num & 0x0000ff00) >> 8u, 
-        (num & 0x000000ff)
-    );
-}
-
-constexpr RGBA HSVA(float H, float S, float V, float A = 1.f) {
-    float C = S * V; // Chroma
-    float HPrime = fmod(H / 60, 6.f); // H'
-    float X = C * (1 - fabs(fmod(HPrime, 2.f) - 1));
-    float M = V - C;
-
-    float R = 0.f;
-    float G = 0.f;
-    float B = 0.f;
-
-    switch (static_cast<int>(HPrime)) {
-    case 0: R = C; G = X;        break; // [0, 1)
-    case 1: R = X; G = C;        break; // [1, 2)
-    case 2:        G = C; B = X; break; // [2, 3)
-    case 3:        G = X; B = C; break; // [3, 4)
-    case 4: R = X;        B = C; break; // [4, 5)
-    case 5: R = C;        B = X; break; // [5, 6)
-    }
-
-    R += M;
-    G += M;
-    B += M;
-
-    RGBA color;
-    color.r = (u8) (R * 255);
-    color.g = (u8) (G * 255);
-    color.b = (u8) (B * 255);
-    color.a = (u8) (A * 255);
-    return color;
-}
 
 class Shader;
 
@@ -156,18 +102,26 @@ public:
 
     next_R linkAttribute(const char* name);
     next_R linkInstancedAttribute(const char* name);
-    next_R skipAttribute();
+    inline next_R skipAttribute() {
+        return m_shader;
+    }
     next_R autoLink();
     next_R autoInstancedLink();
 
     template<typename... Ts>
-    next_R customLink(Ts&&...);
+    inline next_R customLink(Ts&&... args) {
+        type_N::linkAttributes(*this, forward<Ts>(args)...);
+        return m_shader;
+    }
 
     template<u32 S>
     R<S> linkAttributes(const char* const (&)[S]);
 
     template<typename... Ts>
-    next_R customInstancedLink(Ts&&...);
+    inline next_R customInstancedLink(Ts&&... args) {
+        type_N::linkInstancedAttributes(*this, forward<Ts>(args)...);
+        return m_shader;
+    }
 
     Shader& autoLinkAll();
     inline Shader& end() {
@@ -198,11 +152,6 @@ inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::linkInstanc
 }
 
 template<u32 N, typename Tupl>
-inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::skipAttribute() {
-    return m_shader;
-}
-
-template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoLink() {
     linkAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
     return m_shader;
@@ -211,20 +160,6 @@ inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoLink() 
 template<u32 N, typename Tupl>
 inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::autoInstancedLink() {
     return linkInstancedAttribute<type_N>(m_shader.indexToLocation(N), tupleOffset<N, Tupl>(), sizeof(Tupl));
-}
-
-template<u32 N, typename Tupl>
-template<typename... Ts>
-inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::customLink(Ts&&... args) {
-    type_N::linkAttributes(*this, forward<Ts>(args)...);
-    return m_shader;
-}
-
-template<u32 N, typename Tupl>
-template<typename... Ts>
-inline typename AttribLinker<N, Tupl>::next_R AttribLinker<N, Tupl>::customInstancedLink(Ts&&... args) {
-    type_N::linkInstancedAttributes(*this, forward<Ts>(args)...);
-    return m_shader;
 }
 
 template<u32 N, typename Tupl>
